@@ -3,18 +3,47 @@ import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
 import { Trans } from 'react-i18next';
 import { ThronetekiUser } from '../../../types/user';
 import { useAuth } from 'react-oidc-context';
-import { CardMenuItem, CardMouseOverEventArgs, GameCard, GamePlayer } from '../../../types/game';
+import {
+    CardMenuItem,
+    CardMouseOverEventArgs,
+    Game,
+    GameCard,
+    GamePlayer
+} from '../../../types/game';
 import classNames from 'classnames';
-import PlayerStats from './PlayerStats';
-import PlayerBoard from './PlayerBoard';
 import { useGetCardsQuery } from '../../../redux/api/apiSlice';
 import ActivePlayerPrompt from './ActivePlayerPrompt';
 import GameChat from './GameChat';
 import { gameNodeActions } from '../../../redux/slices/gameNodeSlice';
 import LoadingSpinner from '../../LoadingSpinner';
-import { BoardSide, CardLocation } from '../../../types/enums';
+import { CardLocation, GameMode } from '../../../types/enums';
 import CardZoom from './CardZoom';
 import GameConfigurationModal from './GameConfigurationModal';
+import JoustGameBoard from './Joust/JoustGameBoard';
+import MeleeGameBoard from './Melee/MeleeGameBoard';
+
+export interface GameBoardProps {
+    settings: any;
+    activeGame: Game;
+    thisPlayer: GamePlayer;
+    otherPlayers: GamePlayer[];
+    manualMode: boolean;
+    newMessages: number;
+    onMessagesClick: () => void;
+    onMuteClick: () => void;
+    onSettingsClick: () => void;
+    isSpectating: () => boolean;
+    onCardClick: (card: GameCard) => {
+        payload: string;
+        type: 'gameNode/sendCardClickedMessage';
+    };
+    onDragDrop: (card: string, source: CardLocation, target: CardLocation) => void;
+    onMenuItemClick: (card: GameCard, menuItem: CardMenuItem) => void;
+    onMouseOut: () => void;
+    onMouseOver: (arg: CardMouseOverEventArgs) => void;
+    onToggleDrawDeckVisibleClick: (visible: boolean) => void;
+    onShuffleClick: () => void;
+}
 
 const placeholderPlayer: GamePlayer = {
     activePlayer: false,
@@ -86,45 +115,19 @@ const GameBoard = () => {
         }
     }, [activeGame?.messages.length, lastMessageCount, showMessages]);
 
-    const renderBoard = (thisPlayer: GamePlayer, otherPlayer: GamePlayer) => {
-        return (
-            <div className='board-middle d-flex flex-column flex-grow-1 flex-shrink-1'>
-                <div className='board-inner flex-grow-1 flex-shrink-1 d-flex'>
-                    <div className='play-area'>
-                        {
-                            <>
-                                <PlayerBoard
-                                    cardsInPlay={otherPlayer.cardPiles.cardsInPlay}
-                                    isSpectating={isSpectating()}
-                                    onCardClick={onCardClick}
-                                    onMenuItemClick={onMenuItemClick}
-                                    onMouseOut={onMouseOut}
-                                    onMouseOver={onMouseOver}
-                                    rowDirection='reverse'
-                                    user={user}
-                                />
-                                <PlayerBoard
-                                    cardsInPlay={thisPlayer.cardPiles.cardsInPlay}
-                                    cardSize={settings.cardSize}
-                                    hand={thisPlayer.cardPiles.hand}
-                                    isMe={!isSpectating()}
-                                    isSpectating={isSpectating()}
-                                    manualMode={true}
-                                    onCardClick={onCardClick}
-                                    onDragDrop={onDragDrop}
-                                    onMenuItemClick={onMenuItemClick}
-                                    onMouseOut={onMouseOut}
-                                    onMouseOver={onMouseOver}
-                                    rowDirection='default'
-                                    shadows={thisPlayer.cardPiles.shadows}
-                                    user={user}
-                                />
-                            </>
-                        }
+    const RenderBoard = (props: GameBoardProps) => {
+        switch (activeGame.gameMode) {
+            case GameMode.Joust:
+                return <JoustGameBoard {...props} />;
+            case GameMode.Melee:
+                return <MeleeGameBoard {...props} />;
+            default:
+                return (
+                    <div>
+                        <Trans>There has been a problem with loading the game board</Trans>
                     </div>
-                </div>
-            </div>
-        );
+                );
+        }
     };
 
     if (isLoading) {
@@ -157,16 +160,36 @@ const GameBoard = () => {
         );
     }
 
-    let otherPlayer = Object.values(activeGame.players).find((player) => {
+    let otherPlayers = Object.values(activeGame.players).filter((player) => {
         return player.name !== thisPlayer.name;
     });
 
     thisPlayer = defaultPlayerInfo(thisPlayer);
-    otherPlayer = defaultPlayerInfo(otherPlayer);
 
-    const boardClass = classNames('game-board d-flex justify-content-between flex-column', {
-        'select-cursor': thisPlayer && thisPlayer.selectCard
-    });
+    // TODO: Replace below with dummy opponents option in lobby (dev only)
+    const buildDummyOpponents = () => {
+        const amount = activeGame.gameMode === GameMode.Melee ? 3 : 1;
+        const otherPlayers = [];
+        for (let i = 1; i <= amount; i++) {
+            const otherPlayer = defaultPlayerInfo();
+            otherPlayer.name += `_${i}`;
+            otherPlayers.push(otherPlayer);
+        }
+        return otherPlayers;
+    };
+    otherPlayers =
+        otherPlayers.length > 0
+            ? otherPlayers.map((otherPlayer) => defaultPlayerInfo(otherPlayer))
+            : buildDummyOpponents();
+
+    const boardClass = classNames(
+        'game-board',
+        activeGame.gameMode,
+        'd-flex justify-content-between flex-column',
+        {
+            'select-cursor': thisPlayer && thisPlayer.selectCard
+        }
+    );
 
     const onCardClick = (card: GameCard) =>
         dispatch(gameNodeActions.sendCardClickedMessage(card.uuid));
@@ -229,6 +252,8 @@ const GameBoard = () => {
         dispatch(gameNodeActions.sendToggleTimerSettingMessage({ option: option, value: value }));
     };
 
+    const onSettingsClick = () => setShowModal(true);
+
     const isSpectating = () => !activeGame.players[user.name as string];
 
     const settings = JSON.parse(user.throneteki_settings);
@@ -248,32 +273,26 @@ const GameBoard = () => {
                     timerSettings={thisPlayer.timerSettings}
                 />
             )}
-            <div className='stats-top'>
-                <PlayerStats
-                    agenda={otherPlayer.agenda}
-                    faction={otherPlayer.faction}
-                    activePlayer={otherPlayer.activePlayer}
-                    firstPlayer={otherPlayer.firstPlayer}
-                    showControls={false}
-                    stats={otherPlayer.stats}
-                    user={otherPlayer.user}
-                    cardPiles={otherPlayer.cardPiles}
-                    isMe={false}
-                    numDeckCards={otherPlayer.numDeckCards}
+            <div className='main-window d-flex flex-row flex-grow-1 flex-shrink-1'>
+                <RenderBoard
+                    settings={settings}
+                    activeGame={activeGame}
+                    thisPlayer={thisPlayer}
+                    otherPlayers={otherPlayers}
+                    manualMode={true}
+                    newMessages={newMessages}
+                    onMessagesClick={onMessagesClick}
+                    onMuteClick={onMuteClick}
+                    onSettingsClick={onSettingsClick}
+                    isSpectating={isSpectating}
                     onCardClick={onCardClick}
                     onDragDrop={onDragDrop}
-                    onToggleVisibilityClick={onToggleDrawDeckVisibleClick}
                     onMenuItemClick={onMenuItemClick}
                     onMouseOut={onMouseOut}
                     onMouseOver={onMouseOver}
+                    onToggleDrawDeckVisibleClick={onToggleDrawDeckVisibleClick}
                     onShuffleClick={onShuffleClick}
-                    side={BoardSide.Top}
-                    size={settings.cardSize}
-                    spectating={isSpectating()}
                 />
-            </div>
-            <div className='main-window d-flex flex-row flex-grow-1 flex-shrink-1'>
-                {renderBoard(thisPlayer, otherPlayer)}
                 {cardToZoom && <CardZoom card={cardToZoom} />}
                 <div className='right-side d-flex flex-row'>
                     <div className='d-flex flex-column justify-content-around'>
@@ -312,36 +331,6 @@ const GameBoard = () => {
                     )}
                 </div>
             </div>
-            <PlayerStats
-                agenda={thisPlayer.agenda}
-                faction={thisPlayer.faction}
-                firstPlayer={thisPlayer.firstPlayer}
-                activePlayer={thisPlayer.activePlayer}
-                cardPiles={thisPlayer.cardPiles}
-                isMe={!isSpectating()}
-                manualMode={true}
-                muteSpectators={activeGame.muteSpectators}
-                numDeckCards={thisPlayer.numDrawCards}
-                numMessages={newMessages}
-                onMessagesClick={onMessagesClick}
-                onCardClick={onCardClick}
-                onDragDrop={onDragDrop}
-                onToggleVisibilityClick={onToggleDrawDeckVisibleClick}
-                onMenuItemClick={onMenuItemClick}
-                onShuffleClick={onShuffleClick}
-                onMouseOut={onMouseOut}
-                onMouseOver={onMouseOver}
-                onMuteClick={onMuteClick}
-                onSettingsClick={() => setShowModal(true)}
-                showControls={!isSpectating() && true}
-                showDeck={thisPlayer.showDeck}
-                showMessages
-                side={BoardSide.Bottom}
-                size={settings.cardSize}
-                spectating={isSpectating()}
-                stats={thisPlayer.stats}
-                user={thisPlayer.user}
-            />
         </div>
     );
 };

@@ -10,6 +10,11 @@ export enum GameType {
     Competitive = 'competitive'
 }
 
+export enum GameMode {
+    Joust = 'joust',
+    Melee = 'melee'
+}
+
 export enum RestrictedListCardSet {
     Original = 'original',
     Redesign = 'redesign'
