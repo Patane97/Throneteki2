@@ -148,7 +148,7 @@ const NewGame = ({
                                     /*!tournament &&*/ <>
                                         <Row className='mb-2'>
                                             <Form.Group as={Col} controlId='formGridGameName'>
-                                                <div className='d-flex justify-content-between'>
+                                                <div className='d-flex justify-content-between '>
                                                     <Form.Label>{t('Name')}</Form.Label>
                                                     <Form.Label>
                                                         {GameNameMaxLength -
@@ -167,7 +167,7 @@ const NewGame = ({
                                             </Form.Group>
                                         </Row>
                                         <Row className='mb-2'>
-                                            <Form.Group as={Col}>
+                                            <Form.Group as={Col} lg={6} className='mb-2'>
                                                 <Form.Label>{t('Restricted List')}</Form.Label>
                                                 <Form.Select
                                                     {...formProps.getFieldProps('restrictedListId')}
@@ -179,7 +179,7 @@ const NewGame = ({
                                                     ))}
                                                 </Form.Select>
                                             </Form.Group>
-                                            <Form.Group as={Col}>
+                                            <Form.Group as={Col} lg={6}>
                                                 <Form.Label>{t('Game Mode')}</Form.Label>
                                                 <Form.Select
                                                     {...formProps.getFieldProps('gameMode')}
