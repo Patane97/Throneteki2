@@ -23,6 +23,7 @@ import JoustGameBoard from './Joust/JoustGameBoard';
 import MeleeGameBoard from './Melee/MeleeGameBoard';
 
 export interface GameBoardProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     settings: any;
     activeGame: Game;
     thisPlayer: GamePlayer;
@@ -185,7 +186,7 @@ const GameBoard = () => {
     const boardClass = classNames(
         'game-board',
         activeGame.gameMode,
-        'd-flex justify-content-between flex-column',
+        'd-flex justify-content-between flex-row',
         {
             'select-cursor': thisPlayer && thisPlayer.selectCard
         }
@@ -273,7 +274,7 @@ const GameBoard = () => {
                     timerSettings={thisPlayer.timerSettings}
                 />
             )}
-            <div className='main-window d-flex flex-row flex-grow-1 flex-shrink-1'>
+            <div className='main-window col-10'>
                 <RenderBoard
                     settings={settings}
                     activeGame={activeGame}
@@ -293,42 +294,39 @@ const GameBoard = () => {
                     onToggleDrawDeckVisibleClick={onToggleDrawDeckVisibleClick}
                     onShuffleClick={onShuffleClick}
                 />
-                {cardToZoom && <CardZoom card={cardToZoom} />}
-                <div className='right-side d-flex flex-row'>
-                    <div className='d-flex flex-column justify-content-around'>
-                        <div className='h-50'></div>
-                        <div className='inset-pane h-50 d-flex flex-column justify-content-end'>
-                            {isSpectating() ? (
-                                <div />
-                            ) : (
-                                <ActivePlayerPrompt
-                                    cards={cards}
-                                    buttons={thisPlayer.buttons}
-                                    controls={thisPlayer.controls}
-                                    promptText={thisPlayer.menuTitle}
-                                    promptTitle={thisPlayer.promptTitle}
-                                    onButtonClick={onCommand}
-                                    onMouseOver={onMouseOver}
-                                    onMouseOut={onMouseOut}
-                                    onTitleClick={onTitleClick}
-                                    user={user}
-                                    phase={thisPlayer.phase}
-                                />
-                            )}
-                            {/*this.getTimer()*/}
-                        </div>
+            </div>
+            {cardToZoom && <CardZoom card={cardToZoom} />}
+            <div className='side-window col-2 d-flex flex-column'>
+                {showMessages && (
+                    <div className='game-chat flex-grow-1 flex-shrink-1 d-flex flex-column'>
+                        <GameChat
+                            messages={activeGame.messages}
+                            onCardMouseOut={onMouseOut}
+                            onCardMouseOver={onMouseOver}
+                            onSendChat={sendChatMessage}
+                            muted={isSpectating() && activeGame.muteSpectators}
+                        />
                     </div>
-                    {showMessages && (
-                        <div className='gamechat w-100 flex-grow-1 flex-shrink-1 d-flex flex-column'>
-                            <GameChat
-                                messages={activeGame.messages}
-                                onCardMouseOut={onMouseOut}
-                                onCardMouseOver={onMouseOver}
-                                onSendChat={sendChatMessage}
-                                muted={isSpectating() && activeGame.muteSpectators}
-                            />
-                        </div>
+                )}
+                <div className='inset-pane w-100 d-flex flex-column justify-content-end'>
+                    {isSpectating() ? (
+                        <div />
+                    ) : (
+                        <ActivePlayerPrompt
+                            cards={cards}
+                            buttons={thisPlayer.buttons}
+                            controls={thisPlayer.controls}
+                            promptText={thisPlayer.menuTitle}
+                            promptTitle={thisPlayer.promptTitle}
+                            onButtonClick={onCommand}
+                            onMouseOver={onMouseOver}
+                            onMouseOut={onMouseOut}
+                            onTitleClick={onTitleClick}
+                            user={user}
+                            phase={thisPlayer.phase}
+                        />
                     )}
+                    {/*this.getTimer()*/}
                 </div>
             </div>
         </div>

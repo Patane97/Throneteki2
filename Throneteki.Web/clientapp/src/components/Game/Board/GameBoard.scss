@@ -26,11 +26,20 @@
         position: absolute;
         margin-left: 10px;
     }
-}
 
-.main-window {
-    overflow: hidden;
-    flex-basis: 0;
+    ::-webkit-scrollbar {
+        width: .75rem;
+        height: .75rem;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: rgb(172, 172, 172, 0.5);
+        border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
 }
 
 .drop-target {
@@ -58,6 +67,10 @@
 .inset-pane {
     width: 210px;
     margin-right: 5px;
+
+    .card {
+        margin: 0px;
+    }
 }
 
 .inset-pane > div {
