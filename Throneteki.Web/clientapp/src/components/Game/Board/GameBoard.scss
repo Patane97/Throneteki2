@@ -9,6 +9,14 @@
         cursor: url('~assets/img/crosshairs.cur'), default;
     }
 
+    &.joust {
+        @import "./Joust/JoustGameBoard";
+    }
+
+    &.melee {
+        @import "./Melee/MeleeGameBoard";
+    }
+
     .card {
         position: relative;
         margin: 5px;
@@ -18,65 +26,19 @@
         position: absolute;
         margin-left: 10px;
     }
-}
 
-.stats-top {
-    .panel {
-        -moz-box-shadow: none;
-        -webkit-box-shadow: none;
-        box-shadow: none;
-    }
-}
-
-.main-window {
-    overflow: hidden;
-    flex-basis: 0;
-}
-
-.board-middle {
-    overflow-x: hidden;
-}
-
-.board-inner {
-    min-height: 0;
-    overflow-x: hidden;
-}
-
-.play-area {
-    overflow-x: auto;
-}
-
-.play-area,
-.player-board {
-    .drop-target {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+    ::-webkit-scrollbar {
+        width: .75rem;
+        height: .75rem;
     }
 
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 0;
-}
+    ::-webkit-scrollbar-thumb {
+        background-color: rgb(172, 172, 172, 0.5);
+        border-radius: 3px;
+    }
 
-.player-board {
-    padding: 10px;
-    flex: 2;
-
-    border-bottom: 2px dashed $primary;
-
-    &.our-side {
-        margin-top: 30px;
-        z-index: $layer-player-board-our-side;
-
-        &.player {
-            flex: 3;
-        }
-
-        border-bottom: none;
+    ::-webkit-scrollbar-track {
+        background: transparent;
     }
 }
 
@@ -98,13 +60,17 @@
 }
 
 .right-side {
-    position: relative;
+    /*position: relative;*/
     overflow: hidden;
 }
 
 .inset-pane {
     width: 210px;
     margin-right: 5px;
+
+    .card {
+        margin: 0px;
+    }
 }
 
 .inset-pane > div {

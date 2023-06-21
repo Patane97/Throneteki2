@@ -19,6 +19,7 @@ public class LobbyGame
         Password = string.IsNullOrEmpty(request.Password) ? null : HashPassword(request.Password);
         Owner = owner;
         GameType = request.GameType;
+        GameMode = request.GameMode;
         ShowHand = request.ShowHands;
         IsGameTimeLimited = request.UseGameTimeLimit;
     }
@@ -31,6 +32,7 @@ public class LobbyGame
     public bool AllowSpectators { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? GameType { get; set; }
+    public string GameMode { get; set; }
     public ICollection<GameUser> GameUsers => _gameUsers.Values;
     public List<GameUser> Players => _gameUsers.Values.Where(gu => gu.GameUserType == GameUserType.Player).ToList();
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -154,9 +156,9 @@ public class LobbyGame
             //event: this.event,
             GamePrivate = IsPrivate,
             GameType,
+            GameMode,
             Id,
             Name,
-//            isMelee: this.isMelee,
             Owner,
             Players = GameUsers.Where(gu => gu.GameUserType == GameUserType.Player).Select(gu => gu.User.GetDetails()),
             //            restrictedList: this.restrictedList,

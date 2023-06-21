@@ -67,6 +67,7 @@ export interface Game {
     full: boolean;
     gamePrivate: boolean;
     gameType: GameType;
+    gameMode: GameMode;
     id: string;
     name: string;
     needsPassword: boolean;

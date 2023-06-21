@@ -12,6 +12,8 @@ public class NewGameRequest
 
     [Required]
     public string GameType { get; set; } = null!;
+    [Required]
+    public string GameMode { get; set; } = null!;
 
     public bool UseGameTimeLimit { get; set; }
     public int GameTimeLimit { get; set; }
