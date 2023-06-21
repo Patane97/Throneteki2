@@ -7,17 +7,19 @@ namespace Throneteki.Lobby.Redis.Handlers;
 public class HelloMessageHandler : IRedisCommandHandler<RedisIncomingMessage<HelloMessage>>
 {
     private readonly GameNodeManager _gameNodeManager;
+    private readonly LobbyService _lobbyService;
 
-    public HelloMessageHandler(GameNodeManager gameNodeManager)
+    public HelloMessageHandler(GameNodeManager gameNodeManager, LobbyService lobbyService)
     {
         _gameNodeManager = gameNodeManager;
+        _lobbyService = lobbyService;
     }
 
-    public Task Handle(RedisIncomingMessage<HelloMessage> message)
+    public async Task Handle(RedisIncomingMessage<HelloMessage> message)
     {
         if (message.Arg == null)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         var node = new LobbyNode
@@ -29,7 +31,6 @@ public class HelloMessageHandler : IRedisCommandHandler<RedisIncomingMessage<Hel
         };
 
         _gameNodeManager.AddNode(node);
-
-        return Task.CompletedTask;
+        await _lobbyService.SyncGames(node, message.Arg.Games);
     }
 }

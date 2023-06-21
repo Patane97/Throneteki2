@@ -11,8 +11,10 @@ interface GamePlayerRow {
 
 const GamePlayerRow = ({ allowJoin, game, onJoinGame }: GamePlayerRow) => {
     let reversePlayer = false;
-    const players = game.players.map((player) => {
-        const row = <GamePlayer key={player.name} player={player} reverse={reversePlayer} />;
+    const players = Object.values(game.players).map((player) => {
+        const row = (
+            <GamePlayer key={player.user.username} player={player} reverse={reversePlayer} />
+        );
 
         reversePlayer = !reversePlayer;
 

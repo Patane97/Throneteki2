@@ -71,7 +71,7 @@ const PendingGame = () => {
             }
 
             const otherPlayer = Object.values(currentGame.players).find(
-                (p: LobbyGamePlayer) => p.name !== user.username
+                (p: LobbyGamePlayer) => p.user.username !== user.username
             );
 
             if (!otherPlayer) {
@@ -79,8 +79,8 @@ const PendingGame = () => {
             }
 
             showNotification({
-                body: `${otherPlayer.name} has joined your game`,
-                icon: `/img/avatar/${otherPlayer.name}.png`
+                body: `${otherPlayer.user.username} has joined your game`,
+                icon: `/img/avatar/${otherPlayer.user.username}.png`
             });
         }
 
@@ -108,7 +108,7 @@ const PendingGame = () => {
     }
 
     const canStartGame = () => {
-        if (!user || !currentGame || currentGame.owner !== user.name || connecting) {
+        if (!user || !currentGame || currentGame.owner.username !== user.name || connecting) {
             return false;
         }
 

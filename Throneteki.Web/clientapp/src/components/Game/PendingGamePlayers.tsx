@@ -20,7 +20,7 @@ const PendingGamePlayers = ({ currentGame, user, onSelectDeck }: PendingGamePlay
     return (
         <Panel title={t('Players')}>
             {Object.values(currentGame.players).map((player) => {
-                const playerIsMe = player && player.name === user?.name;
+                const playerIsMe = player && player.user.username === user?.name;
 
                 let deck = null;
                 let selectLink = null;
@@ -49,9 +49,9 @@ const PendingGamePlayers = ({ currentGame, user, onSelectDeck }: PendingGamePlay
                         </Button>
                     );
                 }
-
                 const userClass =
-                    'username' + (player.role ? ` ${player.role.toLowerCase()}-role` : '');
+                    'username' +
+                    (player.user.role ? ` ${player.user.role.toLowerCase()}-role` : '');
                 let rowClass = 'player-row';
                 if (firstPlayer) {
                     rowClass += ' mb-2';
@@ -59,9 +59,9 @@ const PendingGamePlayers = ({ currentGame, user, onSelectDeck }: PendingGamePlay
                     firstPlayer = false;
                 }
                 return (
-                    <div className={rowClass} key={player.name}>
-                        <Avatar avatar={player.avatar} />
-                        <span className={userClass}>{player.name}</span>
+                    <div className={rowClass} key={player.user.username}>
+                        <Avatar avatar={player.user.avatar} />
+                        <span className={userClass}>{player.user.username}</span>
                         {deck} {status} {selectLink}
                     </div>
                 );

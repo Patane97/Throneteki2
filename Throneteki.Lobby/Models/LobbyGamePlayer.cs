@@ -12,16 +12,20 @@ public class LobbyGamePlayer
     public LobbyDeck? Deck { get; set; }
     public ThronetekiUser User { get; set; } = null!;
 
-    public object GetSummary(LobbyGamePlayer? player = null)
+    public LobbyGamePlayerSummary GetSummary(LobbyGamePlayer? player = null)
     {
-        return new
+        return new LobbyGamePlayerSummary
         {
-            Avatar,
-            DeckSelected,
+            DeckSelected = DeckSelected,
             DeckStatus = Deck?.ValidationStatus,
             DeckName = player != null && player.Name == User.Username ? Deck?.Name : null,
-            Name,
-            Role
+            Name = Name,
+            User = new LobbyUser
+            {
+                Username = Name,
+                Avatar = Avatar,
+                Role = Role
+            }
         };
     }
 

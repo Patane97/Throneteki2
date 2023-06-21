@@ -16,10 +16,10 @@ import './i18n';
 import './custom.scss';
 
 const oidcConfig = {
-    authority: 'https://localhost:7000/',
-    redirect_uri: 'https://localhost:44460/authentication/login-callback',
-    silent_redirect_uri: 'https://localhost:44460/authentication/login-callback',
-    client_id: 'throneteki',
+    authority: `${process.env.REACT_APP_AUTH_URL}`,
+    redirect_uri: `${process.env.REACT_APP_WEB_URL}/authentication/login-callback`,
+    silent_redirect_uri: `${process.env.REACT_APP_WEB_URL}/authentication/login-callback`,
+    client_id: `${process.env.REACT_APP_CLIENT_ID}`,
     scope: 'openid api email profile roles offline_access lobby',
     loadUserInfo: true,
     onSigninCallback: (): void => {

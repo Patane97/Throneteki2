@@ -8,7 +8,7 @@ public class GameNodeTimeoutJob : IJob
     private readonly GameNodeManager _nodeManager;
     private readonly LobbyService _lobbyService;
 
-    private static readonly TimeSpan NodeTimeout = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan NodeTimeout = TimeSpan.FromMinutes(5);
 
     public GameNodeTimeoutJob(GameNodeManager nodeManager, LobbyService lobbyService)
     {

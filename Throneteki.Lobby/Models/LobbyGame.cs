@@ -24,12 +24,17 @@ public class LobbyGame
         IsGameTimeLimited = request.UseGameTimeLimit;
     }
 
+    public LobbyGame(ThronetekiUser owner)
+    {
+        Owner = owner;
+    }
+
     public bool AllowSpectators { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public string GameType { get; set; }
+    public string? GameType { get; set; }
     public string GameMode { get; set; }
     public ICollection<GameUser> GameUsers => _gameUsers.Values;
-    public ICollection<GameUser> Players => _gameUsers.Values.Where(gu => gu.GameUserType == GameUserType.Player).ToList();
+    public List<GameUser> Players => _gameUsers.Values.Where(gu => gu.GameUserType == GameUserType.Player).ToList();
     public Guid Id { get; set; } = Guid.NewGuid();
     public bool IsChessClocksEnabled { get; set; }
     public bool IsGameTimeLimited { get; set; }
@@ -62,7 +67,7 @@ public class LobbyGame
         return Convert.ToHexString(secretHash);
     }
 
-    public object GetState(LobbyGamePlayer? player)
+    public LobbyGameSummary GetState(LobbyGamePlayer? player)
     {
         /*
         var playerSummaries = {};
@@ -124,18 +129,16 @@ public class LobbyGame
         };
         */
 
-        return new
+        return new LobbyGameSummary
         {
-            AllowSpectators,
-            CreatedAt,
-            GamePrivate = IsPrivate,
-            GameType,
-            Id,
-            Name,
+            AllowSpectators = AllowSpectators, CreatedAt = CreatedAt, GamePrivate = IsPrivate,
+            GameType = GameType ?? string.Empty,
+            Id = Id,
+            Name = Name ?? string.Empty,
             NeedsPassword = !string.IsNullOrEmpty(Password),
-            Owner = Owner.Username,
-            Players = GameUsers.Where(gu => gu.GameUserType == GameUserType.Player).Select(gu => gu.User.GetSummary(player)),
-            ShowHand,
+            Owner = Owner,
+            Players = GameUsers.Where(gu => gu.GameUserType == GameUserType.Player).Select(gu => gu.User.GetSummary(player)).ToDictionary(k => k.Name, v => v),
+            ShowHand = ShowHand,
             Spectators = GameUsers.Where(gu => gu.GameUserType == GameUserType.Spectator).Select(gu => gu.User.GetSummary()),
             Started = IsStarted,
             UseChessClocks = IsChessClocksEnabled,
@@ -317,22 +320,4 @@ public class LobbyGame
             })
         };
     }
-}
-
-public class LobbySavedGame
-{
-    public int SavedGameId { get; set; }
-    public Guid GameId { get; set; }
-    public DateTime StartedAt { get; set; }
-    public string? Winner { get; set; }
-    public string? WinReason { get; set; }
-    public DateTime? FinishedAt { get; set; }
-    public IEnumerable<LobbySavedGamePlayer> Players { get; set; } = new List<LobbySavedGamePlayer>();
-}
-
-public class LobbySavedGamePlayer
-{
-    public string Name { get; set; } = null!;
-    public int DeckId { get; set; }
-    public int Power { get; set; }
 }

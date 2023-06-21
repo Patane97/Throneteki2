@@ -22,9 +22,9 @@ const GamePlayer = ({ player, reverse }: GamePlayerProps) => {
             <div className='game-faction-row first-player'>
                 <div className='game-player-name'>
                     <span className='gamelist-avatar'>
-                        <Avatar avatar={player.name} />
+                        <Avatar avatar={player.user.username} />
                     </span>
-                    <span className='bold'>{player.name}</span>
+                    <span className='bold'>{player.user.username}</span>
                 </div>
                 <div className='agenda-mini'>
                     {/*
@@ -61,9 +61,9 @@ const GamePlayer = ({ player, reverse }: GamePlayerProps) => {
                 */}
                 </div>
                 <div className='game-player-name'>
-                    <span className='bold'>{player.name}</span>
+                    <span className='bold'>{player.user.username}</span>
                     <span className='gamelist-avatar'>
-                        <Avatar avatar={player.name} />
+                        <Avatar avatar={player.user.username} />
                     </span>
                 </div>
             </div>

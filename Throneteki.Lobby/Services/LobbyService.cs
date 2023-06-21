@@ -484,6 +484,13 @@ public class LobbyService
         await _hubContext.Clients.Clients(connectionsToSend).SendAsync(message, gameState, cancellationToken);
     }
 
+    private async Task BroadcastGameList()
+    {
+        var gameStates = GamesById.Values.Select(g => g.GetState(null));
+
+        await _hubContext.Clients.All.SendAsync(LobbyMethods.Games, gameStates);
+    }
+
     private async Task SendGameState(LobbyGame game, CancellationToken cancellationToken = default)
     {
         if (game.IsStarted)
@@ -553,5 +560,49 @@ public class LobbyService
         await SendGameState(game);
 
         await BroadcastGameMessage(LobbyMethods.UpdateGame, game);
+    }
+
+    public async Task SyncGames(LobbyNode node, IEnumerable<LobbyGameSummary> nodeGames)
+    {
+        foreach (var game in nodeGames)
+        {
+            var lobbyGame = new LobbyGame(game.Owner)
+            {
+                Id = game.Id,
+                IsStarted = game.Started,
+                Name = game.Name,
+                AllowSpectators = game.AllowSpectators,
+                CreatedAt = game.CreatedAt,
+                GameType = game.GameType,
+                IsChessClocksEnabled = game.UseChessClocks,
+                IsGameTimeLimited = game.UseGameTimeLimit,
+                Node = node,
+                IsPrivate = game.GamePrivate,
+                ShowHand = game.ShowHand,
+            };
+
+            lobbyGame.Players.AddRange(game.Players.Values.Select(p => new GameUser
+                {
+                    User = new LobbyGamePlayer
+                    {
+                        User = new ThronetekiUser
+                        {
+                            Username = p.Name,
+                            Avatar = p.User?.Avatar ?? string.Empty,
+                            Role = p.User?.Avatar
+                        }
+                    },
+                    GameUserType = GameUserType.Player
+                }
+            ));
+
+            GamesById.TryAdd(lobbyGame.Id, lobbyGame);
+            foreach (var player in game.Players.Values)
+            {
+                GamesByUsername[player.Name] = lobbyGame;
+            }
+        }
+
+        await BroadcastGameList();
     }
 }
