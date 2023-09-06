@@ -30,6 +30,7 @@ export enum GameCommands {
     MenuButton = 'menuButton',
     MenuItemClicked = 'menuItemClick',
     ShowDrawDeck = 'showDrawDeck',
+    ShuffleDeck = 'shuffleDeck',
     ToggleKeywordSetting = 'toggleKeywordSetting',
     ToggleMuteSpectators = 'toggleMuteSpectators',
     TogglePromptDupes = 'toggleDupes',

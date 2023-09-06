@@ -1,5 +1,62 @@
-.navbar {
-    color: $navbar-dark-color;
+.navbar-item {
+    width: auto;
+    font-family: 'PoppinsMedium', serif;
+    font-size: 16px;
+    transition: all 0.4s ease-in-out;
+    text-decoration: none;
+    color: #ffffff !important;
+    &:hover {
+        cursor: default;
+    }
+}
+
+.navbar-item.interactable {
+    color: $emphasis !important;
+    &:hover {
+        color: #ffffff !important;
+        cursor: pointer;
+        background-size: 100% 0.1em;
+    }
+}
+
+.dropdown {
+    color: $emphasis;
+    font-family: 'PoppinsMedium', serif;
+    font-size: 16px;
+    transition: all 0.4s ease-in-out;
+    &:hover {
+        color: #ffffff;
+        cursor: pointer;
+        background-size: 100% 0.1em;
+    }
+}
+
+.dropdown-toggle {
+    color: $emphasis !important;
+    font-family: 'PoppinsMedium', serif;
+    font-size: 16px;
+    transition: all 0.4s ease-in-out;
+    &:hover {
+        color: #ffffff !important;
+        cursor: pointer;
+        background-size: 100% 0.1em;
+    }
+}
+
+.dropdown-menu {
+    background: rgba(0, 0, 0, 0.9);
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    transition: all 0.4s ease-in-out;
+}
+
+.dropdown-child {
+    margin: 0.5rem;
+    padding: 0;
+    display: block;
+    &:hover {
+        background: none !important;
+    }
 }
 
 .navbar-sm {
@@ -7,12 +64,32 @@
     height: $navbar-height;
 }
 
-.navbar-sm .navbar-nav > li > span {
+.navbar-sm .navbar-nav > span {
+    padding: 0 15px;
+    line-height: $navbar-height;
+}
+
+.navbar-sm .navbar-nav > a {
     padding: 0 15px;
     line-height: $navbar-height;
 }
 
 .navbar-sm .navbar-nav > li > a {
+    padding: 0 15px;
+    line-height: $navbar-height;
+}
+
+.navbar-sm .navbar-item > span {
+    padding: 0 15px;
+    line-height: $navbar-height;
+}
+
+.navbar-sm .navbar-item > li > span {
+    padding: 0 15px;
+    line-height: $navbar-height;
+}
+
+.navbar-sm .nav-item > a {
     padding: 0 15px;
     line-height: $navbar-height;
 }

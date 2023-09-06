@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
+using Throneteki.Lobby.Commands;
 using Throneteki.Models.Models;
 using Throneteki.WebService;
 
@@ -10,7 +11,7 @@ public class LobbyGame
 {
     private readonly ConcurrentDictionary<string, GameUser> _gameUsers = new();
 
-    public LobbyGame(NewGameRequest request, ThronetekiUser owner, LobbyRestrictedList? restrictedList)
+    public LobbyGame(NewGameCommand request, ThronetekiUser owner, LobbyRestrictedList? restrictedList)
     {
         RestrictedList = restrictedList;
         AllowSpectators = request.AllowSpectators;

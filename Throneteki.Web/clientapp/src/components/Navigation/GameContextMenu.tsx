@@ -81,21 +81,28 @@ const GameContextMenu = () => {
 
     return (
         <>
-            <li onMouseOver={() => setShowPopup(true)} onMouseOut={() => setShowPopup(false)}>
+            <li
+                onMouseOver={() => setShowPopup(true)}
+                onMouseOut={() => setShowPopup(false)}
+                className='navbar-item'
+            >
                 <span>{t('{{users}} spectators', { users: activeGame.spectators.length })}</span>
             </li>
             {showPopup && spectators.length > 0 && spectatorPopup}
             {!isSpectating && (
-                <li>
-                    <Nav.Link onClick={() => dispatch(gameNodeActions.sendConcedeMessage())}>
+                <li className='navbar-item'>
+                    <Nav.Link
+                        onClick={() => dispatch(gameNodeActions.sendConcedeMessage())}
+                        className='navbar-item interactable'
+                    >
                         <span>
                             <Trans>Concede</Trans>
                         </span>
                     </Nav.Link>
                 </li>
             )}
-            <li>
-                <Nav.Link onClick={onLeaveClick}>
+            <li className='navbar-item'>
+                <Nav.Link onClick={onLeaveClick} className='navbar-item interactable'>
                     <Trans>Leave Game</Trans>
                 </Nav.Link>
             </li>

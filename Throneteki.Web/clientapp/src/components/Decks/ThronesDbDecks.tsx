@@ -6,14 +6,16 @@ import {
     faDownload,
     faCloudArrowUp,
     faCircleCheck,
-    faCircleNotch
+    faCircleNotch,
+    faRightLeft
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
     ApiError,
     useGetThronesDbDecksQuery,
     useImportThronesDbDecksMutation,
-    useLinkThronesDbAccountMutation
+    useLinkThronesDbAccountMutation,
+    useSyncThronesDbDecksMutation
 } from '../../redux/api/apiSlice';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { ThronesDbDeck } from '../../types/decks';
@@ -37,6 +39,7 @@ const ThronesDbDecks = () => {
     const { data: response, isLoading, isError } = useGetThronesDbDecksQuery({});
     const [importDecks, { isLoading: isImportLoading }] = useImportThronesDbDecksMutation();
     const [linkAccount, { isLoading: isLinkLoading }] = useLinkThronesDbAccountMutation();
+    const [syncDecks, { isLoading: isSyncLoading }] = useSyncThronesDbDecksMutation();
 
     const onImportClick = async (deckIds: number[]) => {
         setError('');
@@ -53,6 +56,26 @@ const ThronesDbDecks = () => {
                 t(
                     apiError.data.message ||
                         'An error occured importing decks. Please try again later.'
+                )
+            );
+        }
+    };
+
+    const onSyncClick = async () => {
+        setError('');
+
+        try {
+            const response = await syncDecks({}).unwrap();
+
+            if (!response.success) {
+                setError(response.message);
+            }
+        } catch (err) {
+            const apiError = err as ApiError;
+            setError(
+                t(
+                    apiError.data.message ||
+                        'An error occured syncing decks. Please try again later.'
                 )
             );
         }
@@ -153,6 +176,8 @@ const ThronesDbDecks = () => {
         content = <LoadingSpinner text='Loading ThronesDB decks, please wait...' />;
     } else if (isImportLoading) {
         content = <LoadingSpinner text='Importing decks, please wait...' />;
+    } else if (isSyncLoading) {
+        content = <LoadingSpinner text='Syncing decks, please wait...' />;
     } else if (isError) {
         content = (
             <Alert variant='danger'>
@@ -170,7 +195,7 @@ const ThronesDbDecks = () => {
                     onClick={async () => {
                         try {
                             const response = await linkAccount({}).unwrap();
-                            window.location.replace(response.location);
+                            window.location.replace(response.data.location);
 
                             if (!response.success) {
                                 setError(response.message);
@@ -222,6 +247,15 @@ const ThronesDbDecks = () => {
                             text='Import All'
                             onClick={async () => {
                                 await onImportClick(response.data.map((d: ThronesDbDeck) => d.id));
+                            }}
+                        />
+                        <FaIconButton
+                            variant='light'
+                            className='ms-2'
+                            icon={faRightLeft}
+                            text='Sync'
+                            onClick={async () => {
+                                await onSyncClick();
                             }}
                         />
                     </div>

@@ -12,72 +12,37 @@ interface ServerStatusProps {
     serverType: string;
 }
 
-const ServerStatus = (props: ServerStatusProps) => {
-    const { connecting, connected, responseTime, serverType } = props;
+const ServerStatus = ({ connecting, connected, responseTime, serverType }: ServerStatusProps) => {
     const { t } = useTranslation();
 
-    let className = '';
-    let toolTip = `${serverType} is`;
-    let pingText;
-    let icon = faCheckCircle;
+    const connectionStatus = t(
+        (connected && 'Connected') || (connecting && 'Connecting') || 'Disconnected'
+    );
 
-    if (connected) {
-        className += ' text-success';
-        toolTip += ' connected';
+    const connectionIcon = (connected && faCheckCircle) || (connecting && faTimesCircle) || faBan;
 
-        let pingClass;
+    const toolTip = `${serverType} is ${connectionStatus}`;
 
-        if (responseTime === undefined || responseTime < 0) {
-            pingText = (
-                <span>
-                    {serverType[0]}: {t('Waiting for ping')}
-                </span>
-            );
-        } else {
-            if (responseTime < 150) {
-                pingClass = 'text-success';
-            } else if (responseTime < 300) {
-                pingClass = 'text-warning';
-            } else {
-                pingClass = 'text-danger';
-            }
+    const pingLevel = `text-${
+        connected
+            ? responseTime
+                ? (responseTime < 150 && 'success') || (responseTime < 300 && 'warning') || 'danger'
+                : 'neutral'
+            : connecting
+            ? 'warning'
+            : 'danger'
+    }`;
 
-            pingText = (
-                <>
-                    <span>{serverType[0]}: </span>
-                    <span className={pingClass}>{responseTime}ms</span>
-                </>
-            );
-        }
-    } else if (connecting) {
-        className += ' text-warning';
-        icon = faTimesCircle;
-        toolTip += ' connecting';
-        pingText = (
-            <>
-                <span>{serverType}: </span>
-                <span className='text-warning'>{t('Connecting')}</span>
-            </>
-        );
-    } else {
-        className += ' text-danger';
-        icon = faBan;
-        toolTip += ' disconnected';
-        pingText = (
-            <>
-                <span>{serverType}: </span>
-                <span className='text-danger'>{t('Disconnected')}</span>
-            </>
-        );
-    }
+    const pingText2 = `${serverType[0]}: ${
+        connected ? (responseTime ? `${responseTime}ms` : 'Waiting') : connectionStatus
+    }`;
 
     return (
-        <li className='server-status'>
-            {pingText}
-            <span className={className}>
-                <FontAwesomeIcon icon={icon} title={t(toolTip)} />
+        <div className='navbar-item'>
+            <span className={pingLevel}>
+                {pingText2} <FontAwesomeIcon icon={connectionIcon} title={t(toolTip)} />
             </span>
-        </li>
+        </div>
     );
 };
 

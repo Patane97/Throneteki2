@@ -217,7 +217,7 @@ const GameBoard = () => {
             setCardToZoom(arg);
         }
     };
-    const onShuffleClick = () => true;
+    const onShuffleClick = () => dispatch(gameNodeActions.sendShuffleDeckMessage());
     const onCommand = (command: string, arg: string, method: string, promptId: string) => {
         dispatch(gameNodeActions.sendPromptClickedMessage({ arg, command, method, promptId }));
     };
@@ -329,6 +329,41 @@ const GameBoard = () => {
                     {/*this.getTimer()*/}
                 </div>
             </div>
+            <PlayerStats
+                agenda={thisPlayer.agenda}
+                faction={thisPlayer.faction}
+                firstPlayer={thisPlayer.firstPlayer}
+                activePlayer={thisPlayer.activePlayer}
+                cardPiles={thisPlayer.cardPiles}
+                isMe={!isSpectating()}
+                manualMode={true}
+                muteSpectators={activeGame.muteSpectators}
+                numDeckCards={thisPlayer.numDrawCards}
+                numMessages={newMessages}
+                onMessagesClick={onMessagesClick}
+                onCardClick={onCardClick}
+                onDragDrop={onDragDrop}
+                onToggleVisibilityClick={onToggleDrawDeckVisibleClick}
+                onMenuItemClick={onMenuItemClick}
+                onShuffleClick={onShuffleClick}
+                onMouseOut={onMouseOut}
+                onMouseOver={onMouseOver}
+                onMuteClick={onMuteClick}
+                onPopupChange={(args) => {
+                    if (args.source === CardLocation.Draw && !args.visible) {
+                        dispatch(gameNodeActions.sendShowDrawDeckMessage(false));
+                    }
+                }}
+                onSettingsClick={() => setShowModal(true)}
+                showControls={!isSpectating() && true}
+                showDeck={thisPlayer.showDeck}
+                showMessages
+                side={BoardSide.Bottom}
+                size={settings.cardSize}
+                spectating={isSpectating()}
+                stats={thisPlayer.stats}
+                user={thisPlayer.user}
+            />
         </div>
     );
 };

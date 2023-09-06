@@ -1,13 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using AutoMapper;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Options;
-using Throneteki.DeckValidation;
 using Throneteki.Lobby.Models;
-using Throneteki.Models.Models;
-using Throneteki.Models.Services;
 using Throneteki.WebService;
 using LobbyMessage = Throneteki.Lobby.Models.LobbyMessage;
 
@@ -22,25 +16,16 @@ public class LobbyService
     private static readonly ConcurrentDictionary<Guid, LobbyGame> GamesById = new();
 
     private static readonly TimeSpan StaleGameTimeout = TimeSpan.FromMinutes(10);
-    private readonly CardService _cardService;
     private readonly IHubContext<LobbyHub> _hubContext;
-    private readonly LobbyOptions _lobbyOptions;
     private readonly ILogger<LobbyService> _logger;
-    private readonly IMapper _mapper;
-    private readonly GameNodeManager _nodeManager;
     private readonly ThronetekiService.ThronetekiServiceClient _thronetekiService;
 
     public LobbyService(ThronetekiService.ThronetekiServiceClient thronetekiService, IHubContext<LobbyHub> hubContext,
-        CardService cardService, IMapper mapper, GameNodeManager nodeManager, ILogger<LobbyService> logger,
-        IOptions<LobbyOptions> lobbyOptions)
+        ILogger<LobbyService> logger)
     {
         _thronetekiService = thronetekiService;
         _hubContext = hubContext;
-        _cardService = cardService;
-        _mapper = mapper;
-        _nodeManager = nodeManager;
         _logger = logger;
-        _lobbyOptions = lobbyOptions.Value;
     }
 
     public async Task UserConnected(HubCallerContext context)
@@ -163,12 +148,12 @@ public class LobbyService
 
                 if (game.IsEmpty)
                 {
-                    await BroadcastGameMessage(LobbyMethods.RemoveGame, game, context.ConnectionAborted);
+                    await BroadcastGameMessage(LobbyMethods.RemoveGame, game);
                     GamesById.TryRemove(game.Id, out _);
                 }
                 else
                 {
-                    await BroadcastGameMessage(LobbyMethods.UpdateGame, game, context.ConnectionAborted);
+                    await BroadcastGameMessage(LobbyMethods.UpdateGame, game);
                 }
 
                 if (!game.IsStarted)
@@ -179,225 +164,37 @@ public class LobbyService
         }
     }
 
-    public async Task HandleLobbyChat(HubCallerContext context, string message)
+    public IEnumerable<string> GetConnectionsNotBlockedByUser(ThronetekiUser user)
     {
-        var user = (await _thronetekiService.GetUserByUsernameAsync(
-            new GetUserByUsernameRequest
-            {
-                Username = context.User!.Identity!.Name
-            })).User;
-
-        if ((DateTime.UtcNow - user.Registered.ToDateTime()).TotalSeconds < _lobbyOptions.MinLobbyChatTime)
-        {
-            await _hubContext.Clients.Client(context.ConnectionId).SendAsync(LobbyMethods.NoChat);
-        }
-
-        var response = await _thronetekiService.AddLobbyMessageAsync(new AddLobbyMessageRequest
-        {
-            Message = message[..Math.Min(512, message.Length)],
-            UserId = user.Id
-        });
-
-        if (response?.Message == null)
-        {
-            _logger.LogError("Error adding lobby message");
-            return;
-        }
-
-        var newMessage = new LobbyMessage
-        {
-            Id = response.Message.Id,
-            Message = response.Message.Message,
-            Time = response.Message.Time.ToDateTime(),
-            User = new LobbyUser
-            {
-                Id = user.Id,
-                Avatar = user.Avatar,
-                Username = user.Username,
-                Role = response.Message.User.Role
-            }
-        };
-
-        var excludedConnectionIds = new List<string>();
-
-        excludedConnectionIds.AddRange(UsersByName.Values.Where(u =>
+        return UsersByName.Values.Where(u =>
             u.BlockList.Any(bl => bl.UserId == user.Id) &&
-            user.BlockList.Any(bl => bl.UserId == u.Id)).Select(u => Connections[ConnectionsByUsername[u.Username]]));
-
-        await _hubContext.Clients.AllExcept(excludedConnectionIds).SendAsync(LobbyMethods.LobbyChat, newMessage);
+            user.BlockList.Any(bl => bl.UserId == u.Id)).Select(u => Connections[ConnectionsByUsername[u.Username]]);
     }
 
-    public async Task HandleNewGame(HubCallerContext context, NewGameRequest request)
+    public LobbyGame? GetGameForUser(string username)
     {
-        var user = (await _thronetekiService.GetUserByUsernameAsync(
-            new GetUserByUsernameRequest
-            {
-                Username = context.User!.Identity!.Name
-            }, cancellationToken: context.ConnectionAborted)).User;
-
-        if (GamesByUsername.ContainsKey(user.Username))
-        {
-            return;
-        }
-        // Check for quickjoin
-
-        var restrictedLists = await _cardService.GetRestrictedLists();
-
-        var restrictedList = request.RestrictedListId == null
-            ? restrictedLists.First()
-            : restrictedLists.FirstOrDefault(r => r.Id == request.RestrictedListId);
-
-        var newGame = new LobbyGame(request, user, restrictedList);
-
-        newGame.AddUser(new LobbyGamePlayer { User = user }, GameUserType.Player);
-
-        GamesById[newGame.Id] = newGame;
-        GamesByUsername[user.Username] = newGame;
-
-        await BroadcastGameMessage(LobbyMethods.NewGame, newGame, context.ConnectionAborted);
-
-        await _hubContext.Groups.AddToGroupAsync(context.ConnectionId, newGame.Id.ToString(),
-            context.ConnectionAborted);
-        await SendGameState(newGame, context.ConnectionAborted);
+        return GamesByUsername.TryGetValue(username, out var value) ? value : null;
     }
 
-    public async Task HandleSelectDeck(HubCallerContext context, int deckId)
+    public LobbyGame? GetGameById(Guid id)
     {
-        var user = (await _thronetekiService.GetUserByUsernameAsync(
-            new GetUserByUsernameRequest
-            {
-                Username = context.User!.Identity!.Name
-            }, cancellationToken: context.ConnectionAborted)).User;
-
-        if (!GamesByUsername.ContainsKey(user.Username))
-        {
-            return;
-        }
-
-        var deck = (await _thronetekiService.GetDeckByIdAsync(new GetDeckByIdRequest { DeckId = deckId },
-            cancellationToken: context.ConnectionAborted)).Deck;
-        if (deck == null)
-        {
-            return;
-        }
-
-        var lobbyDeck = _mapper.Map<LobbyDeck>(deck);
-
-        var game = GamesByUsername[user.Username];
-
-        var packs = _mapper.Map<IEnumerable<LobbyPack>>(
-            (await _thronetekiService.GetAllPacksAsync(new GetAllPacksRequest(),
-                cancellationToken: context.ConnectionAborted)).Packs);
-
-        var deckValidator = new DeckValidator(packs,
-            game.RestrictedList != null ? new[] { game.RestrictedList } : Array.Empty<LobbyRestrictedList>());
-
-        lobbyDeck.ValidationStatus = deckValidator.ValidateDeck(lobbyDeck);
-        game.SelectDeck(user.Username, lobbyDeck);
-
-        await SendGameState(game, context.ConnectionAborted);
+        return GamesById.TryGetValue(id, out var value) ? value : null;
     }
 
-    public async Task HandleStartGame(HubCallerContext context)
+    public void RemoveGameForUser(string username)
     {
-        var user = (await _thronetekiService.GetUserByUsernameAsync(
-            new GetUserByUsernameRequest
-            {
-                Username = context.User!.Identity!.Name
-            }, cancellationToken: context.ConnectionAborted)).User;
-
-        if (!GamesByUsername.ContainsKey(user.Username))
-        {
-            return;
-        }
-
-        var game = GamesByUsername[user.Username];
-        if (game.Owner.Username != user.Username || !game.Players.All(p => p.User.DeckSelected))
-        {
-            return;
-        }
-
-        var node = _nodeManager.GetNextAvailableNode();
-        if (node == null)
-        {
-            await _hubContext.Clients.Client(context.ConnectionId)
-                .SendAsync(LobbyMethods.GameError, "No game nodes available. Try again later.");
-            return;
-        }
-
-        game.IsStarted = true;
-        game.Node = node;
-
-        await BroadcastGameMessage(LobbyMethods.UpdateGame, game, context.ConnectionAborted);
-        await _nodeManager.StartGame(node, game.GetStartGameDetails());
-
-        var gameState = game.GetSaveState();
-
-        await _thronetekiService.CreateGameAsync(new CreateGameRequest
-        {
-            Game = new ThronetekiGame
-            {
-                Id = gameState.SavedGameId,
-                GameId = gameState.GameId.ToString(),
-                StartedAt = gameState.StartedAt.ToTimestamp(),
-                FinishedAt = gameState.FinishedAt.HasValue
-                    ? gameState.FinishedAt.Value.ToTimestamp()
-                    : new Timestamp { Nanos = 0, Seconds = 0 },
-                WinReason = gameState.WinReason ?? string.Empty,
-                Winner = gameState.Winner ?? string.Empty,
-                Players =
-                {
-                    gameState.Players.Select(p => new ThronetekiGamePlayer
-                    {
-                        Player = p.Name,
-                        DeckId = p.DeckId,
-                        TotalPower = p.Power
-                    })
-                }
-            }
-        }, cancellationToken: context.ConnectionAborted);
-
-        await _hubContext.Clients.Group(game.Id.ToString()).SendAsync(LobbyMethods.HandOff, new
-        {
-            url = node.Url,
-            name = node.Name,
-            gameId = game.Id.ToString()
-        }, context.ConnectionAborted);
+        GamesByUsername.TryRemove(username, out _);
     }
 
-    public async Task HandleLeaveGame(HubCallerContext context)
+    public void RemoveGame(Guid id)
     {
-        var user = (await _thronetekiService.GetUserByUsernameAsync(
-            new GetUserByUsernameRequest
-            {
-                Username = context.User!.Identity!.Name
-            }, cancellationToken: context.ConnectionAborted)).User;
+        GamesById.TryRemove(id, out _);
+    }
 
-        if (!GamesByUsername.ContainsKey(user.Username))
-        {
-            return;
-        }
-
-        var game = GamesByUsername[user.Username];
-
-        game.PlayerLeave(user.Username);
-
-        GamesByUsername.TryRemove(user.Username, out _);
-
-        await _hubContext.Clients.Client(context.ConnectionId)
-            .SendAsync(LobbyMethods.ClearGameState, context.ConnectionAborted);
-
-        await _hubContext.Groups.RemoveFromGroupAsync(context.ConnectionId, game.Id.ToString());
-
-        if (game.IsEmpty)
-        {
-            await BroadcastGameMessage(LobbyMethods.RemoveGame, game, context.ConnectionAborted);
-            GamesById.TryRemove(game.Id, out _);
-        }
-        else
-        {
-            await BroadcastGameMessage(LobbyMethods.UpdateGame, game, context.ConnectionAborted);
-        }
+    public void AddGameForUser(LobbyGame game, string username)
+    {
+        GamesById[game.Id] = game;
+        GamesByUsername[username] = game;
     }
 
     public async Task CloseGame(Guid gameId)
@@ -459,13 +256,11 @@ public class LobbyService
         await _hubContext.Clients.All.SendAsync(LobbyMethods.RemoveGames, gamesOnNode.Select(g => g.GetState(null)));
     }
 
-    private async Task BroadcastGameMessage(string message, LobbyGame game,
-        CancellationToken cancellationToken = default)
+    public async Task BroadcastGameMessage(string message, LobbyGame game)
     {
         var gameState = game.GetState(null);
 
-        await _hubContext.Clients.AllExcept(ConnectionsByUsername.Values)
-            .SendAsync(message, gameState, cancellationToken);
+        await _hubContext.Clients.AllExcept(ConnectionsByUsername.Values).SendAsync(message, gameState);
 
         var connectionsToSend = new List<string>();
 
@@ -481,17 +276,10 @@ public class LobbyService
             connectionsToSend.Add(connection);
         }
 
-        await _hubContext.Clients.Clients(connectionsToSend).SendAsync(message, gameState, cancellationToken);
+        await _hubContext.Clients.Clients(connectionsToSend).SendAsync(message, gameState);
     }
 
-    private async Task BroadcastGameList()
-    {
-        var gameStates = GamesById.Values.Select(g => g.GetState(null));
-
-        await _hubContext.Clients.All.SendAsync(LobbyMethods.Games, gameStates);
-    }
-
-    private async Task SendGameState(LobbyGame game, CancellationToken cancellationToken = default)
+    public async Task SendGameState(LobbyGame game)
     {
         if (game.IsStarted)
         {
@@ -508,58 +296,8 @@ public class LobbyService
             }
 
             var connection = ConnectionsByUsername[player.User.Name];
-            await _hubContext.Clients.Client(connection)
-                .SendAsync(LobbyMethods.GameState, game.GetState(player.User), cancellationToken);
+            await _hubContext.Clients.Client(connection).SendAsync(LobbyMethods.GameState, game.GetState(player.User));
         }
-    }
-
-    [SuppressMessage("ReSharper", "SimplifyLinqExpressionUseAll", Justification = "More readable this way")]
-    private static IEnumerable<ThronetekiUser> FilterUserListForUserByBlockList(ThronetekiUser sourceUser,
-        IEnumerable<ThronetekiUser> userList)
-    {
-        return userList.Where(u =>
-            !u.BlockList.Any(bl => bl.UserId == sourceUser.Id) &&
-            !sourceUser.BlockList.Any(bl => bl.UserId == u.Id));
-    }
-
-    public async Task HandleJoinGame(HubCallerContext context, Guid gameId)
-    {
-        var user = (await _thronetekiService.GetUserByUsernameAsync(
-            new GetUserByUsernameRequest
-            {
-                Username = context.User!.Identity!.Name
-            }, cancellationToken: context.ConnectionAborted)).User;
-
-        if (GamesByUsername.ContainsKey(user.Username))
-        {
-            await _hubContext.Clients.Client(context.ConnectionId).SendAsync(LobbyMethods.JoinFailed,
-                "You are already in a game, leave that one first.");
-
-            return;
-        }
-
-        if (!GamesById.TryGetValue(gameId, out var game))
-        {
-            await _hubContext.Clients.Client(context.ConnectionId).SendAsync(LobbyMethods.JoinFailed,
-                "Game not found.");
-
-            return;
-        }
-
-        var message = game.PlayerJoin(user);
-        if (message != null)
-        {
-            await _hubContext.Clients.Client(context.ConnectionId).SendAsync(LobbyMethods.JoinFailed, message);
-
-            return;
-        }
-
-        GamesByUsername[user.Username] = game;
-        await _hubContext.Groups.AddToGroupAsync(context.ConnectionId, game.Id.ToString());
-
-        await SendGameState(game);
-
-        await BroadcastGameMessage(LobbyMethods.UpdateGame, game);
     }
 
     public async Task SyncGames(LobbyNode node, IEnumerable<LobbyGameSummary> nodeGames)
@@ -578,7 +316,7 @@ public class LobbyService
                 IsGameTimeLimited = game.UseGameTimeLimit,
                 Node = node,
                 IsPrivate = game.GamePrivate,
-                ShowHand = game.ShowHand,
+                ShowHand = game.ShowHand
             };
 
             lobbyGame.Players.AddRange(game.Players.Values.Select(p => new GameUser
@@ -604,5 +342,21 @@ public class LobbyService
         }
 
         await BroadcastGameList();
+    }
+
+    private async Task BroadcastGameList()
+    {
+        var gameStates = GamesById.Values.Select(g => g.GetState(null));
+
+        await _hubContext.Clients.All.SendAsync(LobbyMethods.Games, gameStates);
+    }
+
+    [SuppressMessage("ReSharper", "SimplifyLinqExpressionUseAll", Justification = "More readable this way")]
+    private static IEnumerable<ThronetekiUser> FilterUserListForUserByBlockList(ThronetekiUser sourceUser,
+        IEnumerable<ThronetekiUser> userList)
+    {
+        return userList.Where(u =>
+            !u.BlockList.Any(bl => bl.UserId == sourceUser.Id) &&
+            !sourceUser.BlockList.Any(bl => bl.UserId == u.Id));
     }
 }

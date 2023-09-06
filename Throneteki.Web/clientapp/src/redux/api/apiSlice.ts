@@ -181,6 +181,12 @@ export const apiSlice = createApi({
                 method: 'PATCH',
                 body: userDetails
             })
+        }),
+        syncThronesDbDecks: builder.mutation({
+            query: () => ({
+                url: '/decks/thronesdb/sync',
+                method: 'POST'
+            })
         })
     })
 });
@@ -207,5 +213,6 @@ export const {
     useToggleDeckFavouriteMutation,
     useSaveDeckMutation,
     useSaveUserAdminMutation,
-    useSaveUserMutation
+    useSaveUserMutation,
+    useSyncThronesDbDecksMutation
 } = apiSlice;

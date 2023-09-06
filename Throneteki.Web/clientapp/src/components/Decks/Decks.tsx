@@ -18,9 +18,7 @@ const Decks = () => {
     const navigate = useNavigate();
     const [selectedIds, setSelectedIds] = useState([]);
     const [deleteDecks, { isLoading: isDeleteLoading }] = useDeleteDecksMutation();
-    const { data: restrictedLists, isLoading: isRestrictedListLoading } = useGetRestrictedListQuery(
-        []
-    );
+    const { data: restrictedLists } = useGetRestrictedListQuery([]);
     const [restrictedList, setRestrictedList] = useState<string | null>();
 
     useEffect(() => {

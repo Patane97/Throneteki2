@@ -80,6 +80,9 @@ const gameNodeSlice = createSlice({
         sendShowDrawDeckMessage: (state, _: PayloadAction<boolean>) => {
             state.isWaitingForResponse = true;
         },
+        sendShuffleDeckMessage: (state, _: PayloadAction) => {
+            state.isWaitingForResponse = true;
+        },
         sendToggleKeywordSettingMessage: (state, _: PayloadAction<OptionAndValue>) => {
             state.isWaitingForResponse = true;
         },

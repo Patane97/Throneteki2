@@ -28,7 +28,7 @@ const DeckPage = () => {
     const { t } = useTranslation();
     const params = useParams();
     const [restrictedList, setRestrictedList] = useState<string | null>();
-    const [deleteDeck, { isLoading: isDeleteLoading }] = useDeleteDeckMutation();
+    const [deleteDeck] = useDeleteDeckMutation();
     const navigate = useNavigate();
     const [mousePos, setMousePosition] = useState({ x: 0, y: 0 });
     const [zoomCard, setZoomCard] = useState(null);

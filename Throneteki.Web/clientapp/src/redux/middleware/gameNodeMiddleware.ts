@@ -172,6 +172,8 @@ const gameNodeMiddleware: Middleware = (store) => {
             connection.emit('game', GameCommands.Concede);
         } else if (gameNodeActions.sendLeaveGameMessage.match(action)) {
             connection.emit('game', GameCommands.LeaveGame);
+        } else if (gameNodeActions.sendShuffleDeckMessage.match(action)) {
+            connection.emit('game', GameCommands.ShuffleDeck);
         }
 
         next(action);

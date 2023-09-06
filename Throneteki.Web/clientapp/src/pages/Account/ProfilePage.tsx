@@ -11,7 +11,7 @@ const ProfilePage = () => {
 
     useEffect(() => {
         window.location.replace(
-            `${auth.settings.authority}Account/Profile?redirectUrl=${window.location.origin}`
+            `${auth.settings.authority}/Account/Profile?redirectUrl=${window.location.origin}`
         );
     }, [auth.settings.authority]);
 

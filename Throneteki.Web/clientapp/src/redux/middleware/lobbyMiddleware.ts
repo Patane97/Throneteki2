@@ -145,7 +145,6 @@ const lobbyMiddleware: Middleware = (store) => {
         } else if (lobbyActions.sendLobbyChat.match(action)) {
             connection.send(LobbyEvent.LobbyChat, action.payload);
         } else if (lobbyActions.sendNewGame.match(action)) {
-            console.info('newgame', action.payload, connection);
             connection.send(LobbyEvent.NewGame, action.payload);
         } else if (lobbyActions.sendSelectDeck.match(action)) {
             connection.send(LobbyEvent.SelectDeck, action.payload);

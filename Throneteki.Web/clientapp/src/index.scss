@@ -94,9 +94,9 @@ h3 {
 .panel {
     font-family: Verdana;
 
-    -moz-box-shadow: 3px 3px 5px theme-color('primary');
-    -webkit-box-shadow: 3px 3px 5px theme-color('primary');
-    box-shadow: 3px 3px 5px theme-color('primary');
+    -moz-box-shadow: 3px 3px 5px $primary;
+    -webkit-box-shadow: 3px 3px 5px $primary;
+    box-shadow: 3px 3px 5px $primary;
 
     .panel-heading {
         font-weight: normal;
@@ -105,10 +105,10 @@ h3 {
 }
 
 a {
-    color: theme-color('secondary');
+    color: $secondary;
 
     &:hover {
-        color: theme-color('info');
+        color: $info;
         text-decoration: none;
     }
 
@@ -136,3 +136,4 @@ a {
 .rrt-confirm {
     background: $primary !important;
 }
+

@@ -91,7 +91,9 @@ const CardPilePopup = ({
                         onClick={() => {
                             menuItem.handler && menuItem.handler();
 
-                            onCloseClick();
+                            if (menuItem.closeOnClick) {
+                                onCloseClick();
+                            }
                         }}
                     >
                         {menuItem.text}

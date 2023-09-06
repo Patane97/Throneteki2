@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Alert, Button, Col } from 'react-bootstrap';
 
 import Panel from '../../components/Site/Panel';
 import {
+    ApiError,
     useGetThronesDbStatusQuery,
     useLinkThronesDbAccountMutation
 } from '../../redux/api/apiSlice';
@@ -17,15 +18,17 @@ const ThronesDbDecksPage = () => {
 
     const { data: response, isLoading, isError } = useGetThronesDbStatusQuery({});
     const [linkAccount, { isLoading: isLinkLoading }] = useLinkThronesDbAccountMutation();
+    const [errorMessage, setErrorMessage] = useState(null);
 
     let content;
 
     if (isLoading) {
         content = <LoadingSpinner text='Checking ThronesDB link status, please wait...' />;
-    } else if (isError || !response.success) {
+    } else if (isError || !response.success || errorMessage) {
         content = (
             <Alert variant='danger'>
-                {t('An error occured checking ThronesDB data. Please try again later.')}
+                {errorMessage ||
+                    t('An error occured checking ThronesDB data. Please try again later.')}
             </Alert>
         );
     } else if (response.linked) {
@@ -40,23 +43,21 @@ const ThronesDbDecksPage = () => {
                     </Trans>
                 </div>
                 <Button
+                    type='button'
                     onClick={async () => {
                         try {
                             const response = await linkAccount({}).unwrap();
-                            window.location.replace(response.location);
                             if (!response.success) {
-                                // setError(response.message);
+                                setErrorMessage(response.message);
                             } else {
-                                // setSuccess(t('Settings saved successfully.'));
+                                window.location.replace(response.data.location);
                             }
                         } catch (err) {
-                            // const apiError = err as ApiError;
-                            // setError(
-                            //     t(
-                            //         apiError.data.message ||
-                            //             'An error occured linking your account. Please try again later.'
-                            //     )
-                            // );
+                            const apiError = err as ApiError;
+                            setErrorMessage(
+                                apiError.data.message ||
+                                    'An error occured linking your account. Please try again later.'
+                            );
                         }
                     }}
                 >

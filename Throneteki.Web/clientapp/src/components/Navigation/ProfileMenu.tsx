@@ -27,7 +27,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = (props) => {
     );
 
     return (
-        <NavDropdown title={title} id='nav-dropdown'>
+        <NavDropdown title={title} id='nav-dropdown' className='d-flex align-items-center'>
             {props.menu.map((menuItem: MenuItem) => {
                 if (!menuItem.path) {
                     return null;
@@ -36,6 +36,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = (props) => {
                 return (
                     <NavDropdown.Item
                         key={menuItem.path}
+                        className='navbar-item interactable dropdown-child'
                         as={Link}
                         to={menuItem.path}
                         state={menuItem.state}

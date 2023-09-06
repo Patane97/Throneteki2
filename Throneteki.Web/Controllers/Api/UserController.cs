@@ -199,9 +199,13 @@ public class UserController : ControllerBase
 
         await HttpContext.ChallengeAsync("ThronesDB", authProperties);
 
-        return Ok(new
+        return Ok(new ApiDataResponse<ThronesDbLinkResponse>
         {
-            Location = HttpContext.Response.Headers["location"].First()
+            Data = new ThronesDbLinkResponse
+            {
+                Location = HttpContext.Response.Headers["location"].First()
+            },
+            Success = true
         });
     }
 }

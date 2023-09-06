@@ -7,7 +7,8 @@ import {
     CardMenuItem,
     CardMouseOverEventArgs,
     GameCard,
-    PopupChangeEventArgs
+    PopupChangeEventArgs,
+    PopupMenuItem
 } from '../../../types/game';
 
 interface DrawDeckProps {
@@ -44,16 +45,22 @@ const DrawDeck = (props: DrawDeckProps) => {
         spectating
     } = props;
 
-    const drawDeckPopupMenu = showDeck
-        ? [{ text: 'Close and Shuffle', handler: () => onShuffleClick && onShuffleClick() }]
-        : [
-              {
-                  text: 'View Hidden',
-                  handler: () => {
-                      onToggleVisibilityClick && onToggleVisibilityClick(true);
-                  }
-              }
-          ];
+    const drawDeckPopupMenu: PopupMenuItem[] = [
+        {
+            text: 'Close and Shuffle',
+            handler: () => {
+                onShuffleClick && onShuffleClick();
+                onToggleVisibilityClick && onToggleVisibilityClick(false);
+            },
+            closeOnClick: true
+        },
+        {
+            text: showDeck ? 'Hide Deck' : 'View Hidden',
+            handler: () => {
+                onToggleVisibilityClick && onToggleVisibilityClick(!showDeck);
+            }
+        }
+    ];
 
     const hasCards = cards?.length !== 0;
 
@@ -63,9 +70,7 @@ const DrawDeck = (props: DrawDeckProps) => {
             className='draw'
             disablePopup={!hasCards && (spectating || !isMe)}
             hiddenTopCard
-            onPopupChange={(event) =>
-                onPopupChange && !event.visible && onPopupChange({ visible: false })
-            }
+            onPopupChange={(event) => onPopupChange && onPopupChange(event)}
             popupMenu={drawDeckPopupMenu}
             source={CardLocation.Draw}
             cards={cards}

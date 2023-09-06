@@ -74,7 +74,8 @@ const CardPileLink = ({
         } else {
             updatePopupVisibility(false);
         }
-    }, [cards, manualPopup, updatePopupVisibility]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cards, manualPopup]);
 
     const classNameStr = classNames('card-pile-link', className, {
         horizontal: orientation === CardOrientation.Horizontal,

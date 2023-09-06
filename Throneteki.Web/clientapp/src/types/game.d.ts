@@ -141,6 +141,7 @@ export interface GameCard extends Card {
 }
 
 export interface PopupMenuItem {
+    closeOnClick?: boolean;
     handler: () => void;
     text: string;
 }

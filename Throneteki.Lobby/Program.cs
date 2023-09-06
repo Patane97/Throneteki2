@@ -12,6 +12,9 @@ using Throneteki.Lobby.Redis;
 using Throneteki.Lobby.Redis.Commands.Incoming;
 using Throneteki.Lobby.Redis.Handlers;
 using Throneteki.Models.Services;
+using System.Reflection;
+using Throneteki.Lobby.Commands;
+using Throneteki.Lobby.Commands.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +28,7 @@ lobbySection.Bind(lobbyOptions);
 
 builder.Services.Configure<LobbyOptions>(lobbySection);
 
-builder.Services.AddAutoMapper(typeof(GrpcMappingProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(GrpcMappingProfile).Assembly, typeof(MappingProfile).Assembly);
 builder.Services.AddDeckValidation();
 
 var authServerUrl = lobbyOptions.AuthServerUrl;
@@ -95,6 +98,37 @@ builder.Services.AddQuartzHostedService(options =>
 {
     options.WaitForJobsToComplete = true;
 });
+
+var assembly = Assembly.GetExecutingAssembly();
+var implementations = assembly.GetTypes()
+    .Where(t => t is { IsClass: true, IsAbstract: false } && t.GetInterfaces()
+        .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ILobbyCommandHandler<>)))
+    .ToList();
+
+foreach (var implementation in implementations)
+{
+    var interfaceType = implementation.GetInterfaces()
+        .Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ILobbyCommandHandler<>));
+
+    builder.Services.AddTransient(interfaceType, implementation);
+}
+
+implementations = assembly.GetTypes()
+    .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(ILobbyCommand).IsAssignableFrom(t))
+    .ToList();
+
+foreach (var implementation in implementations)
+{
+    var interfaces = implementation.GetInterfaces()
+        .Where(i => typeof(ILobbyCommand).IsAssignableFrom(i));
+
+    foreach (var @interface in interfaces)
+    {
+        builder.Services.AddTransient(@interface, implementation);
+    }
+}
+
+builder.Services.AddTransient<LobbyCommandHandlerFactory>();
 
 var app = builder.Build();
 
