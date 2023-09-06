@@ -6,7 +6,7 @@ import { useAuth } from 'react-oidc-context';
 import * as yup from 'yup';
 
 import { useAppSelector, useAppDispatch } from '../../redux/hooks';
-import { GameType } from '../../types/enums';
+import { GameType, GameMode } from '../../types/enums';
 import Panel from '../Site/Panel';
 import GameOptions from './GameOptions';
 import GameTypes from './GameTypes';
@@ -63,6 +63,7 @@ const NewGame = ({
         allowSpectators: true,
         gameFormat: 'normal',
         gameType: defaultGameType || GameType.Casual,
+        gameMode: GameMode.Joust,
         useGameTimeLimit: !!defaultTimeLimit,
         gameTimeLimit: defaultTimeLimit || 55,
         gamePrivate: defaultPrivate,
@@ -146,12 +147,8 @@ const NewGame = ({
                                 {
                                     /*!tournament &&*/ <>
                                         <Row className='mb-2'>
-                                            <Form.Group
-                                                as={Col}
-                                                lg='8'
-                                                controlId='formGridGameName'
-                                            >
-                                                <div className='d-flex justify-content-between'>
+                                            <Form.Group as={Col} controlId='formGridGameName'>
+                                                <div className='d-flex justify-content-between '>
                                                     <Form.Label>{t('Name')}</Form.Label>
                                                     <Form.Label>
                                                         {GameNameMaxLength -
@@ -170,14 +167,30 @@ const NewGame = ({
                                             </Form.Group>
                                         </Row>
                                         <Row className='mb-2'>
-                                            <Form.Group as={Col} lg='8'>
-                                                <Form.Label>{t('Mode')}</Form.Label>
+                                            <Form.Group as={Col} lg={6} className='mb-2'>
+                                                <Form.Label>{t('Restricted List')}</Form.Label>
                                                 <Form.Select
                                                     {...formProps.getFieldProps('restrictedListId')}
                                                 >
                                                     {restrictedLists?.map((rl: RestrictedList) => (
                                                         <option key={rl.name} value={rl.id}>
                                                             {rl.name}
+                                                        </option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Form.Group>
+                                            <Form.Group as={Col} lg={6}>
+                                                <Form.Label>{t('Game Mode')}</Form.Label>
+                                                <Form.Select
+                                                    {...formProps.getFieldProps('gameMode')}
+                                                >
+                                                    {(
+                                                        Object.keys(GameMode) as Array<
+                                                            keyof typeof GameMode
+                                                        >
+                                                    ).map((gm, index) => (
+                                                        <option key={index} value={GameMode[gm]}>
+                                                            {gm}
                                                         </option>
                                                     ))}
                                                 </Form.Select>
@@ -191,7 +204,7 @@ const NewGame = ({
                         {/*!tournament &&  */ <GameTypes formProps={formProps} />}
                         {!quickJoin && (
                             <Row className='mt-2'>
-                                <Form.Group as={Col} sm={8}>
+                                <Form.Group as={Col}>
                                     <Form.Label>{t('Password')}</Form.Label>
                                     <Form.Control
                                         type='password'
